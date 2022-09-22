@@ -3,4 +3,4 @@ run:
 build:
 	gcc main.c -o main
 clean:
-	rm -f main *.o
+	rm -f main *.o *.txt

@@ -9,6 +9,16 @@
 #include <unistd.h>
 #endif
 
+stack *createTower()
+{
+    stack *tower = createStack();
+    tower->push(tower, 7);
+    tower->push(tower, 5);
+    tower->push(tower, 3);
+    tower->push(tower, 1);
+    return tower;
+}
+
 void wrongMove(char *matrix[6][25])
 {
     printMatrix(matrix);
@@ -38,6 +48,7 @@ void printHelp(char *matrix[6][25])
     printf("  " CYAN("r") " - restart the game\n");
     printf("  " CYAN("u") " - undo the last move\n");
     printf("  " CYAN("s") " - show the solution\n");
+    printf("  " CYAN("l") " - load state to a file\n");
 }
 
 int moveDisk(stack *from, stack *to)
@@ -69,24 +80,28 @@ void solve(int n, stack *stacks[3], int from, int to, int aux, char *matrix[6][2
     if (n == 1)
     {
         moveDisk(stacks[from], stacks[to]);
+
         drawState(matrix, stacks);
         printMatrix(matrix);
         sleep(1);
+
         return;
     }
 
     solve(n - 1, stacks, from, aux, to, matrix);
     moveDisk(stacks[from], stacks[to]);
+
     drawState(matrix, stacks);
     printMatrix(matrix);
     sleep(1);
+
     solve(n - 1, stacks, aux, to, from, matrix);
 }
 
 void gameLoop(char *matrix[6][25], stack *stacks[3], stack *undoMoves)
 {
     char command;
-    char fromStr[20], toStr[20];
+    char fromStr[20], toStr[20], fileName[50];
     int from, to;
     int moveCount = 0;
     int undoCount = 0;
@@ -104,11 +119,11 @@ void gameLoop(char *matrix[6][25], stack *stacks[3], stack *undoMoves)
             return;
         case 'm':
             scanf("%s %s", fromStr, toStr);
-            // printf("from: %d, to: %d", from, to);
 
             from = fromStr[0] - '0' - 1;
             to = toStr[0] - '0' - 1;
-            if (moveDisk(stacks[from], stacks[to]))
+            int inBounds = from >= 0 && from <= 2 && to >= 0 && to <= 2;
+            if (inBounds && moveDisk(stacks[from], stacks[to]))
             {
                 undoMoves->push(undoMoves, from);
                 undoMoves->push(undoMoves, to);
@@ -136,19 +151,13 @@ void gameLoop(char *matrix[6][25], stack *stacks[3], stack *undoMoves)
                 stacks[i]->dispose(stacks[i]);
             }
 
-            stacks[0] = createStack();
+            stacks[0] = createTower();
             stacks[1] = createStack();
             stacks[2] = createStack();
-            stacks[0]->push(stacks[0], 7);
-            stacks[0]->push(stacks[0], 5);
-            stacks[0]->push(stacks[0], 3);
-            stacks[0]->push(stacks[0], 1);
             drawState(matrix, stacks);
             welcomeMessage(matrix);
             break;
-        }
-        if (command == 'u')
-        {
+        case 'u':
             if (undoMoves->isEmpty(undoMoves))
             {
                 printScore(moveCount, undoCount);
@@ -167,38 +176,92 @@ void gameLoop(char *matrix[6][25], stack *stacks[3], stack *undoMoves)
                 printScore(moveCount, undoCount);
                 printMatrix(matrix);
             }
-        }
-        if (command == 's')
-        {
+            break;
+        case 's':
             for (int i = 0; i < 3; i++)
             {
                 stacks[i]->dispose(stacks[i]);
             }
-            stacks[0] = createStack();
+            stacks[0] = createTower();
             stacks[1] = createStack();
             stacks[2] = createStack();
-            stacks[0]->push(stacks[0], 7);
-            stacks[0]->push(stacks[0], 5);
-            stacks[0]->push(stacks[0], 3);
-            stacks[0]->push(stacks[0], 1);
 
             solve(4, stacks, 0, 2, 1, matrix);
             printf(GREEN("Solved in n^2 - 1 (15) moves!"));
             return;
+        case 'l':
+            scanf("%s", fileName);
+            FILE *file = fopen(fileName, "w");
+            if (file == NULL)
+            {
+                printf(RED("Error opening file!") "\n");
+                break;
+            }
+            int *stackArrays[3];
+            for (int i = 0; i < 3; i++)
+            {
+                stackArrays[i] = stacks[i]->toArray(stacks[i]);
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < stacks[i]->size; j++)
+                {
+                    fprintf(file, "%d ", stackArrays[i][j]);
+                }
+                fprintf(file, "-1\n");
+            }
+            fclose(file);
+            printf(GREEN("Saved state to file!") "\n");
+            break;
         }
     }
 }
 
-int main()
+stack **restoreState(char const *fileName)
+{
+    FILE *file = fopen(fileName, "r");
+    if (file == NULL)
+    {
+        printf(RED("Error opening file %s!") "\n", fileName);
+        return NULL;
+    }
+    stack **stacks = malloc(3 * sizeof(stack *));
+    for (int i = 0; i < 3; i++)
+    {
+        stacks[i] = createStack();
+    }
+    int disk;
+    for (int i = 0; i < 3; i++)
+    {
+        while (fscanf(file, "%d", &disk) == 1 && disk != -1)
+        {
+            stacks[i]->push(stacks[i], disk);
+        }
+    }
+    fclose(file);
+    return stacks;
+}
+
+int main(int argc, char const *argv[])
 {
     char *matrix[6][25];
-    stack *st = createStack();
-    st->push(st, 7);
-    st->push(st, 5);
-    st->push(st, 3);
-    st->push(st, 1);
+    stack **stacks = malloc(3 * sizeof(stack *));
 
-    stack *stacks[3] = {st, createStack(), createStack()};
+    if (argc == 2)
+    {
+        stacks = restoreState(argv[1]);
+        if (stacks == NULL)
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        stacks[0] = createTower();
+        stacks[1] = createStack();
+        stacks[2] = createStack();
+    }
+
     drawState(matrix, stacks);
     welcomeMessage(matrix);
 
