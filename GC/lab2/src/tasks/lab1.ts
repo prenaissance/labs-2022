@@ -65,18 +65,20 @@ const task2 = (ctx: CanvasRenderingContext2D) => {
         ctx.fillStyle = gradient;
         ctx.fillRect(x + size / 3, y + size / 3, size / 3, size / 3);
 
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                if (i !== 1 || j !== 1) {
-                    squareRectal(x + size / 3 * i, y + size / 3 * j, size / 3, count - 1);
+        setTimeout(() => {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (i !== 1 || j !== 1) {
+                        squareRectal(x + size / 3 * i, y + size / 3 * j, size / 3, count - 1)
+                    }
                 }
             }
-        }
-    };
+        }, 500);
 
+    };
     const { width, height } = ctx.canvas;
     const size = Math.min(width, height);
-    squareRectal(10, 10, size - 20, 4);
+    squareRectal(10, 10, size - 20, 5);
 };
 
 export {
