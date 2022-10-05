@@ -8,20 +8,20 @@ class Camera {
         document.addEventListener("keydown", (e) => {
             switch (e.key) {
                 case "w":
-                    this.position.x += Math.sin(this.angleX) * 0.1;
-                    this.position.z += Math.cos(this.angleX) * 0.1;
+                    this.position.z += Math.cos(this.angleX * Math.PI) * 0.1;
+                    this.position.x += Math.sin(this.angleX * Math.PI) * 0.1;
                     break;
                 case "s":
-                    this.position.x -= Math.sin(this.angleX) * 0.1;
-                    this.position.z -= Math.cos(this.angleX) * 0.1;
-                    break;
-                case "a":
-                    this.position.x -= Math.cos(this.angleX) * 0.1;
-                    this.position.z += Math.sin(this.angleX) * 0.1;
+                    this.position.z -= Math.cos(this.angleX * Math.PI) * 0.1;
+                    this.position.x -= Math.sin(this.angleX * Math.PI) * 0.1;
                     break;
                 case "d":
-                    this.position.x += Math.cos(this.angleX) * 0.1;
-                    this.position.z -= Math.sin(this.angleX) * 0.1;
+                    this.position.z += Math.cos(this.angleX * Math.PI + Math.PI / 2) * 0.1;
+                    this.position.x += Math.sin(this.angleX * Math.PI + Math.PI / 2) * 0.1;
+                    break;
+                case "a":
+                    this.position.z += Math.cos(this.angleX * Math.PI - Math.PI / 2) * 0.1;
+                    this.position.x += Math.sin(this.angleX * Math.PI - Math.PI / 2) * 0.1;
                     break;
                 case " ":
                     this.position.y += 0.1;
@@ -41,8 +41,8 @@ class Camera {
 
         document.addEventListener("pointermove", (e) => {
             if (this._holding) {
-                this.angleX -= e.movementX * 0.01;
-                this.angleY -= e.movementY * 0.01;
+                this.angleX -= e.movementX * 0.001;
+                this.angleY -= e.movementY * 0.001;
             }
         });
     }

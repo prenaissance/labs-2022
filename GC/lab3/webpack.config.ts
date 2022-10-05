@@ -57,7 +57,9 @@ const config: webpack.Configuration = {
     resolve: {
         extensions: [".ts", ".js", ".json"],
         alias: {
-            assets: path.join(__dirname, "src", "assets")
+            assets: path.join(__dirname, "src", "assets"),
+            common: path.join(__dirname, "src", "common"),
+            camera: path.join(__dirname, "src", "camera")
         }
     },
     devServer: {
