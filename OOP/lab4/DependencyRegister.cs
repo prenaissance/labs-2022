@@ -5,7 +5,7 @@ using lab4.Contexts;
 using lab4.Game.Abstractions;
 using lab4.Models;
 using lab4.Models.Abstractions;
-using lab4.Game.States;
+using lab4.Game.Simulation.States;
 
 namespace lab4
 {
@@ -24,7 +24,8 @@ namespace lab4
                         .AddSingleton<IGameLogger, GameLogger>()
                         .AddSingleton<ShrineState>()
                         .AddSingleton<WeakEnemyState>()
-                        .AddSingleton<InitialState>();
+                        .AddSingleton<InitialState>()
+                        .AddSingleton<BossState>();
                 });
 
         public static IHost GetHost() => CreateHostBuilder(new string[] { }).Build();

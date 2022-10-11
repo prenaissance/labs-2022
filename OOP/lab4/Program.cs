@@ -5,8 +5,8 @@ using lab4.Repositories;
 using lab4.Models.Abstractions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using lab4.Game.States.Abstractions;
-using lab4.Game.States;
+using lab4.Game.Simulation.States.Abstractions;
+using lab4.Game.Simulation.States;
 
 namespace lab4
 {
@@ -20,7 +20,7 @@ namespace lab4
             state.Handle();
 
             System.Console.WriteLine("Next state would be:");
-            Console.WriteLine(state.NextState().GetType().Name);
+            Console.WriteLine(state.NextState().ToString());
 
             state = host.Services.GetRequiredService<WeakEnemyState>();
             for (int i = 0; i < 5; i++)

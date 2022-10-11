@@ -1,9 +1,10 @@
 using lab4.Game.Abstractions;
-using lab4.Game.States.Abstractions;
+using lab4.Game.Simulation.States.Abstractions;
 using lab4.Models;
 using lab4.Models.Abstractions;
+using lab4.Game;
 
-namespace lab4.Game.States
+namespace lab4.Game.Simulation.States
 {
     public class WeakEnemyState : IState
     {
@@ -44,9 +45,9 @@ namespace lab4.Game.States
             _gameLogger.LogStats();
 
         }
-        public IState NextState()
+        public State NextState()
         {
-            return this;
+            return State.WEAK_ENEMY;
         }
     }
 }
