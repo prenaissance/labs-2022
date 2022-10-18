@@ -1,4 +1,4 @@
-# Lab 2 GC
+# Lab 4 GC
 
-Task 1: Drawing some shapes using primitives
-Task 2: Drawing a fractal
+Task 0 (exercises):
+Use vectors to simulate physics
