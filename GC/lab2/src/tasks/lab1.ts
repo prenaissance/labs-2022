@@ -35,6 +35,13 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
     ctx.arc(rx, ry, rx, -Math.PI / 4, -Math.PI, true);
     ctx.stroke();
 
+    // draw chord part
+    ctx.fillStyle = "#25b";
+    ctx.beginPath();
+    ctx.arc(rx, ry, rx, -Math.PI / 4, -Math.PI * 3 / 4, true);
+    ctx.closePath();
+    ctx.fill();
+
     //draw "pie" part
     rx -= 7;
     ctx.translate(7, 0);
