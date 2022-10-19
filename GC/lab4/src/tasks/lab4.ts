@@ -1,13 +1,16 @@
 // import "../utils/extensions";
 import BallFactory from "../game/Ball/BallFactory";
 import { setupLab } from "../utils/setup";
+import noisify from "noise-canvas";
+import { Simplex2, Perlin2 } from "tumult";
+import { Fly } from "../game/Fly";
 
 const TICK_RATE = 1000 / 60;
 
 const task0 = (ctx: CanvasRenderingContext2D) => {
   setupLab(ctx);
-  const { canvas } = ctx;
 
+  const { canvas } = ctx;
   const ball = BallFactory.createBall(
     new DOMPoint(100, 100),
     new DOMPoint(50, 12),
@@ -101,8 +104,121 @@ const task0 = (ctx: CanvasRenderingContext2D) => {
   });
 };
 
-const task1 = (ctx: CanvasRenderingContext2D) => {};
+const task1 = (ctx: CanvasRenderingContext2D) => {
+  setupLab(ctx);
 
-const task2 = (ctx: CanvasRenderingContext2D) => {};
+  const clearButton = document.querySelector("#clear") as HTMLButtonElement;
+
+  const buttonContainer = document.createElement("div");
+  buttonContainer.className = "controls";
+  const whiteNoiseButton = document.createElement("button");
+  whiteNoiseButton.innerText = "White Noise";
+  const simplexNoiseButton = document.createElement("button");
+  simplexNoiseButton.innerText = "Simplex Noise";
+  const perlinNoiseButton = document.createElement("button");
+  perlinNoiseButton.innerText = "Perlin Noise";
+  const gaussianNoiseButton = document.createElement("button");
+  gaussianNoiseButton.innerText = "Gaussian Noise";
+
+  const buttons = [
+    whiteNoiseButton,
+    simplexNoiseButton,
+    perlinNoiseButton,
+    gaussianNoiseButton,
+  ];
+  buttons.forEach((button) => (button.style.fontSize = "0.75em"));
+
+  whiteNoiseButton.addEventListener("click", () => {
+    const { canvas } = ctx;
+    noisify(canvas, (x, y) => {
+      return Math.round(Math.random());
+    });
+  });
+
+  simplexNoiseButton.addEventListener("click", () => {
+    const { canvas } = ctx;
+    const simplex = new Simplex2();
+    noisify(canvas, (x, y) => {
+      return simplex.gen(x / 10, y / 10);
+    });
+  });
+
+  perlinNoiseButton.addEventListener("click", () => {
+    const { canvas } = ctx;
+    const perlin = new Perlin2();
+    noisify(canvas, (x, y) => {
+      return perlin.gen(x / 10, y / 10);
+    });
+  });
+
+  gaussianNoiseButton.addEventListener("click", () => {
+    const { canvas } = ctx;
+    const median = 0.5;
+    const stdDev = 0.1;
+    const gaussian = (x: number) => {
+      return (
+        (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
+        Math.exp(-Math.pow(x - median, 2) / (2 * Math.pow(stdDev, 2)))
+      );
+    };
+
+    const gaussianNoise = () => gaussian(Math.random());
+
+    noisify(canvas, [gaussianNoise, gaussianNoise, gaussianNoise]);
+  });
+
+  buttonContainer.append(...buttons);
+  const flexContainer = document.querySelector(
+    ".flex-container"
+  ) as HTMLDivElement;
+  flexContainer.appendChild(buttonContainer);
+
+  clearButton.addEventListener("click", () => buttonContainer.remove(), {
+    once: true,
+  });
+};
+
+const task2 = (ctx: CanvasRenderingContext2D) => {
+  const fly = new Fly(
+    new DOMPoint(100, 100),
+    new DOMPoint(0, 0),
+    new DOMPoint(5, 0),
+    {
+      color: "#8e44ad",
+      radius: 10,
+      canvas: ctx.canvas,
+    }
+  );
+
+  setupLab(ctx);
+
+  fly.draw();
+
+  let interval = setInterval(() => {
+    fly.update((TICK_RATE * 3) / 1000);
+    fly.checkBoundaryCollision();
+  }, TICK_RATE);
+
+  const loop = () => {
+    setupLab(ctx);
+    fly.draw();
+    fly.drawAcceleration();
+    fly.drawVelocity();
+    requestAnimationFrame(loop);
+  };
+
+  const animationFrame = requestAnimationFrame(loop);
+
+  const clearButton = document.querySelector("#clear") as HTMLButtonElement;
+  clearButton.addEventListener(
+    "click",
+    () => {
+      clearInterval(interval);
+      cancelAnimationFrame(animationFrame);
+      setupLab(ctx);
+    },
+    { once: true }
+  );
+};
 
 export { task0, task1, task2 };

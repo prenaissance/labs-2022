@@ -98,6 +98,13 @@
   "ts-node": {
     "compilerOptions": {
       "module": "CommonJS",
-    }
+    },
+    "include": [
+      "./"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist"
+    ]
   }
 }
