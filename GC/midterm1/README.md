@@ -1,25 +1,15 @@
-# Lab 4 GC
+# midterm GC
 
-## Task 0 (exercises):
+## Task:
 
-Use vectors to simulate physics
+- Make a combination of 2D primitives (ellipse, arc, square)
+- Multiply your shape into an array
+- move your shape using vectors
 
-<img src=".github/task0.png"/>
+## Running locally:
 
-Bouncy ball with physics and wall collisions
+- Install node.js
+- Run `npm start` in the root folder
+## Disclaimers
 
-## Task 1:
-
-Make patterns with different noise types
-
-<img src=".github/task1.png"/>
-
-4 types of noises
-
-## Task 2:
-
-Make a figure fly chaotically changing only the acceleration
-
-<img src=".github/task2.png"/>
-
-Fly figure orbiting
+Ball object should be unified into Fly, it doesn't have an use here, the code is partially duplicated from lab4

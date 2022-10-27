@@ -1,10 +1,5 @@
-// import "../utils/extensions";
-import BallFactory from "../game/Ball/BallFactory";
 import { setupLab } from "../utils/setup";
-import noisify from "noise-canvas";
-import { Perlin1 } from "tumult";
 import { Fly } from "../game/Fly";
-import { gaussian } from "../game/utils/noises";
 
 const TICK_RATE = 1000 / 60;
 
@@ -38,13 +33,11 @@ const midterm = (ctx: CanvasRenderingContext2D) => {
       flies.push(fly);
     }
   }
-
-  const fly = flies[8];
-
+  // background
   setupLab(ctx);
 
   flies.forEach((fly) => fly.draw());
-
+  // update physics state every 1/60th of a second
   let interval = setInterval(() => {
     flies.forEach((fly) => {
       fly.update((TICK_RATE * 6) / 1000);
@@ -52,14 +45,17 @@ const midterm = (ctx: CanvasRenderingContext2D) => {
     });
   }, TICK_RATE);
 
+  // display the changes at an independent speed of the physics
   const loop = () => {
     setupLab(ctx);
     flies.forEach((fly) => fly.draw());
     requestAnimationFrame(loop);
   };
 
+  // start the animation at the framerate that is optimal chosen by the browser
   const animationFrame = requestAnimationFrame(loop);
 
+  // stop the animation when the user clicks the stop button
   const clearButton = document.querySelector("#clear") as HTMLButtonElement;
   clearButton.addEventListener(
     "click",
