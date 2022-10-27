@@ -4,6 +4,7 @@ import { setupLab } from "../utils/setup";
 import noisify from "noise-canvas";
 import { Simplex2, Perlin2 } from "tumult";
 import { Fly } from "../game/Fly";
+import { gaussian } from "../game/utils/noises";
 
 const TICK_RATE = 1000 / 60;
 
@@ -153,14 +154,6 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
 
   gaussianNoiseButton.addEventListener("click", () => {
     const { canvas } = ctx;
-    const median = 0.5;
-    const stdDev = 0.1;
-    const gaussian = (x: number) => {
-      return (
-        (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
-        Math.exp(-Math.pow(x - median, 2) / (2 * Math.pow(stdDev, 2)))
-      );
-    };
 
     const gaussianNoise = () => gaussian(Math.random());
 
@@ -195,7 +188,7 @@ const task2 = (ctx: CanvasRenderingContext2D) => {
   fly.draw();
 
   let interval = setInterval(() => {
-    fly.update((TICK_RATE * 3) / 1000);
+    fly.update((TICK_RATE * 6) / 1000);
     fly.checkBoundaryCollision();
   }, TICK_RATE);
 

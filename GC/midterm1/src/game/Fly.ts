@@ -2,8 +2,10 @@ import Ball from "./Ball/Ball";
 import BallAttributes from "./Ball/BallAttributes";
 import { Physics } from "./utils/consts";
 import { gaussian } from "./utils/noises";
+import { Perlin1 } from "tumult";
 
 export class Fly extends Ball {
+  private readonly noise: Perlin1;
   constructor(
     position: DOMPoint,
     velocity: DOMPoint,
@@ -11,15 +13,25 @@ export class Fly extends Ball {
     attributes: BallAttributes
   ) {
     super(position, velocity, acceleration, attributes);
+
+    this.noise = new Perlin1(Math.random());
   }
 
   override draw() {
     const { canvas, color, radius } = this.attributes;
+    const { x, y } = this.position;
     const ctx = canvas.getContext("2d")!;
     ctx.beginPath();
-    ctx.arc(this.position.x, this.position.y, radius, 0, 2 * Math.PI);
+    ctx.ellipse(x, y, radius * 2, radius, 0, 0, 2 * Math.PI);
     ctx.fillStyle = color;
     ctx.fill();
+    ctx.fillStyle = "#c4a";
+    ctx.fillRect(x - radius * 2.5, y - radius, radius * 1.5, radius * 1.5);
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#222";
+    ctx.arc(x, y, radius, 0, Math.PI);
+    ctx.stroke();
   }
 
   drawAcceleration() {
@@ -48,7 +60,9 @@ export class Fly extends Ball {
   override update(delta: number) {
     // update acceleration in random direction
     this.acceleration = this.acceleration.matrixTransform(
-      new DOMMatrix().rotateSelf((gaussian(Math.random()) - 0.5) * Math.PI)
+      new DOMMatrix().rotateSelf(
+        (this.noise.gen(Math.random() * 300) - 0.5) * Math.PI
+      )
     );
     this.velocity
       .addSelf(this.acceleration.multiply(delta))
