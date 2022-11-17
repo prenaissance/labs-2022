@@ -29,6 +29,7 @@
   "author": "prenaissance",
   "license": "ISC",
   "dependencies": {
+    "gl-vectors": "^0.2.2",
     "noise-canvas": "^1.1.1",
     "tumult": "^3.0.14"
   }

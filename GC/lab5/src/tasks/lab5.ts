@@ -1,15 +1,16 @@
 // import "../utils/extensions";
-import BallFactory from "../game/Ball/BallFactory";
 import { setupLab } from "../utils/setup";
 import { Simplex2, Perlin2 } from "tumult";
 import Ball from "../game/Ball/Ball";
+import { vec2 } from "gl-vectors/swizzling";
+import Bacteria from "../game/Bacteria/Bacteria";
 
 const TICK_RATE = 1000 / 60;
 
 const colors = [
   "#abd123",
   "#d82",
-  "#abd123",
+  "#aba123",
   "#aad9f2",
   "#a23",
   "#aa2",
@@ -26,13 +27,11 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
   const { canvas } = ctx;
 
   const balloons = new Array(8).fill(0).map((_, index) => {
-    return BallFactory.createBall(
-      new DOMPoint(50 + index * 20, 100 + index * 20),
-      new DOMPoint(0, 1),
-      new DOMPoint(20, 0),
-      20,
-      colors[index],
-      canvas
+    return new Ball(
+      vec2(50 + index * 20, 100 + index * 20),
+      vec2(0, 1),
+      vec2(20, 0),
+      { radius: 20, color: colors[index], canvas }
     );
   });
 
@@ -45,14 +44,17 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
     });
   }, TICK_RATE);
 
+  let animationFrame: number;
+
+  const testVec = vec2(1, 2);
+  console.log(testVec);
   const loop = () => {
     setupLab(ctx);
     balloons.forEach((balloon) => balloon.draw());
-
-    requestAnimationFrame(loop);
+    animationFrame = requestAnimationFrame(loop);
   };
 
-  const animationFrame = requestAnimationFrame(loop);
+  animationFrame = requestAnimationFrame(loop);
 
   const clearButton = document.querySelector("#clear") as HTMLButtonElement;
   clearButton.addEventListener(
@@ -67,15 +69,15 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
 
   // drag n drop
   let isDragging = false;
-  let dragStart: DOMPoint;
-  let dragOffset: DOMPoint;
+  let dragStart: vec2;
+  let dragOffset: vec2;
   let dragStartTime = performance.now();
 
   // performance problems with not removing event listeners
   canvas.addEventListener("mousedown", (e) => {
     const { x, y } = e;
     const { left, top } = canvas.getBoundingClientRect();
-    const mousePosition = new DOMPoint(x - left, y - top);
+    const mousePosition = new vec2(x - left, y - top);
     balloons.forEach((balloon) => {
       if (balloon.isInside(mousePosition)) {
         isDragging = true;
@@ -83,7 +85,7 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
         dragStart = balloon.position;
         dragOffset = balloon.position.subtract(mousePosition);
         dragStartTime = performance.now();
-        balloon.velocity = new DOMPoint(0, 0);
+        balloon.velocity = new vec2(0, 0);
       }
     });
   });
@@ -92,7 +94,7 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
     if (isDragging) {
       const { x, y } = e;
       const { left, top } = canvas.getBoundingClientRect();
-      const mousePosition = new DOMPoint(x - left, y - top);
+      const mousePosition = new vec2(x - left, y - top);
       selectedBalloon!.position = dragOffset.add(mousePosition);
     }
   });
@@ -101,7 +103,7 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
     if (isDragging) {
       const { x, y } = e;
       const { left, top } = canvas.getBoundingClientRect();
-      const mousePosition = new DOMPoint(x - left, y - top);
+      const mousePosition = new vec2(x - left, y - top);
       const distance = mousePosition.subtract(dragStart);
       const dragEndTime = performance.now();
       const dragDuration = (dragEndTime - dragStartTime) / 1000;
@@ -114,7 +116,7 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
     if (isDragging) {
       const { x, y } = e;
       const { left, top } = canvas.getBoundingClientRect();
-      const mousePosition = new DOMPoint(x - left, y - top);
+      const mousePosition = new vec2(x - left, y - top);
       const distance = mousePosition.subtract(dragStart);
       const dragEndTime = performance.now();
       const dragDuration = (dragEndTime - dragStartTime) / 1000;
@@ -124,4 +126,92 @@ const task1 = (ctx: CanvasRenderingContext2D) => {
   });
 };
 
-export { task1 };
+const task2 = (ctx: CanvasRenderingContext2D) => {
+  setupLab(ctx);
+  const { canvas } = ctx;
+
+  const bacteria = new Bacteria(vec2(50, 50), vec2(40, -12), vec2(0, 0), {
+    color: "red",
+    radius: 20,
+    canvas,
+  });
+
+  let interval = setInterval(() => {
+    bacteria.update((TICK_RATE * 5) / 1000);
+    bacteria.checkBoundaryCollision();
+  }, TICK_RATE);
+
+  let animationFrame: number;
+
+  const testVec = vec2(1, 2);
+  console.log(testVec);
+  const loop = () => {
+    setupLab(ctx);
+    bacteria.draw();
+    animationFrame = requestAnimationFrame(loop);
+  };
+
+  animationFrame = requestAnimationFrame(loop);
+
+  const clearButton = document.querySelector("#clear") as HTMLButtonElement;
+  clearButton.addEventListener(
+    "click",
+    () => {
+      clearInterval(interval);
+      cancelAnimationFrame(animationFrame);
+      setupLab(ctx);
+    },
+    { once: true }
+  );
+};
+
+const task3 = (ctx: CanvasRenderingContext2D) => {
+  setupLab(ctx);
+  const { canvas } = ctx;
+
+  const bacterias = new Array(8).fill(0).map((_, index) => {
+    return new Bacteria(
+      vec2(50 + index * 30, 100 + index * 30),
+      vec2(25, index * 2),
+      vec2(0, 0),
+      { radius: 20 - index, color: colors[index], canvas }
+    );
+  });
+
+  let interval = setInterval(() => {
+    bacterias.forEach((bacteria) => {
+      bacteria.update((TICK_RATE * 5) / 1000);
+      bacteria.checkBoundaryCollision();
+      bacterias.forEach((otherBacteria) => {
+        if (bacteria !== otherBacteria) {
+          bacteria.checkOtherCollision(otherBacteria);
+        }
+      });
+    });
+  }, TICK_RATE);
+
+  let animationFrame: number;
+
+  const testVec = vec2(1, 2);
+  console.log(testVec);
+  const loop = () => {
+    setupLab(ctx);
+    bacterias.forEach((bacteria) => bacteria.draw());
+    animationFrame = requestAnimationFrame(loop);
+  };
+
+  animationFrame = requestAnimationFrame(loop);
+
+  const clearButton = document.querySelector("#clear") as HTMLButtonElement;
+  clearButton.addEventListener(
+    "click",
+    () => {
+      clearInterval(interval);
+      cancelAnimationFrame(animationFrame);
+      setupLab(ctx);
+    },
+    { once: true }
+  );
+};
+
+export { task1, task2, task3 };

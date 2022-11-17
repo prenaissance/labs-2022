@@ -1,25 +1,13 @@
-# Lab 4 GC
+# Lab 5 GC
 
-## Task 0 (exercises):
+## Task 0 :
 
-Use vectors to simulate physics
-
-<img src=".github/task0.png"/>
-
-Bouncy ball with physics and wall collisions
+Make balloons act like balloons (the physics is not genuine though)
 
 ## Task 1:
 
-Make patterns with different noise types
-
-<img src=".github/task1.png"/>
-
-4 types of noises
+Make a **creature** that moves with oscillations
 
 ## Task 2:
 
-Make a figure fly chaotically changing only the acceleration
-
-<img src=".github/task2.png"/>
-
-Fly figure orbiting
+Make many **_creatures_** that move with oscillations (Added collisions too)

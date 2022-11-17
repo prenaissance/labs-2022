@@ -2,17 +2,17 @@ import Boundaries from "../Collision/Boundaries";
 import BallAttributes from "./BallAttributes";
 import "../../utils/extensions";
 import { Physics } from "../utils/consts";
-
+import { vec2 } from "gl-vectors/swizzling";
 class Ball {
-  position: DOMPoint;
-  velocity: DOMPoint;
-  acceleration: DOMPoint;
+  position: vec2;
+  velocity: vec2;
+  acceleration: vec2;
   attributes: BallAttributes;
 
   constructor(
-    position: DOMPoint,
-    velocity: DOMPoint,
-    acceleration: DOMPoint,
+    position: vec2,
+    velocity: vec2,
+    acceleration: vec2,
     attributes: BallAttributes
   ) {
     this.position = position;
@@ -72,7 +72,7 @@ class Ball {
     ctx.beginPath();
 
     const normalizedVelocity = this.velocity.normalize();
-    const velocityVector = new DOMPoint(
+    const velocityVector = vec2(
       normalizedVelocity.x * this.attributes.radius,
       normalizedVelocity.y * this.attributes.radius
     );
@@ -88,7 +88,7 @@ class Ball {
 
   checkBoundaryCollision() {
     const loseEnergy = () => {
-      this.velocity.multiplySelf(0.35);
+      this.velocity = this.velocity.multiply(0.35);
     };
     const { canvas } = this.attributes;
     const { width, height } = canvas;
@@ -113,24 +113,22 @@ class Ball {
     }
   }
 
-  isInside(point: DOMPoint) {
+  isInside(point: vec2) {
     return this.position.subtract(point).length <= this.attributes.radius;
   }
 
   update(delta: number) {
-    const resultAcceleration = this.acceleration.add(
-      new DOMPoint(0, Physics.G)
-    );
+    const resultAcceleration = this.acceleration.add(vec2(0, Physics.minusG));
 
-    this.velocity
-      .addSelf(resultAcceleration.multiply(delta))
-      .multiplySelf(1 - Physics.AIR_RESISTANCE * delta);
+    this.velocity = this.velocity
+      .add(resultAcceleration.multiply(delta))
+      .multiply(1 - Physics.AIR_RESISTANCE * delta);
 
-    this.position.addSelf(this.velocity.multiply(delta));
+    this.position = this.position.add(this.velocity.multiply(delta));
   }
 
   rotateAcceleration(radians: number) {
-    this.acceleration = this.acceleration.matrixTransform(
+    this.acceleration = this.acceleration.applyMatrix(
       new DOMMatrix().rotate(0, 0, radians * 180)
     );
   }
