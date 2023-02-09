@@ -10,7 +10,7 @@ def benchmark(func):
         end = time.perf_counter()
         return {
             "result": result,
-            "time": end - start
+            "time": (end - start) * 1000
         }
     return wrapper
 
