@@ -147,3 +147,5 @@ msbuild.wrn
 
 # Visual Studio 2015
 .vs/
+
+__pycache__

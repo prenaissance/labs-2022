@@ -1,5 +1,6 @@
 from decorators import benchmark
 from concurrent.futures import ProcessPoolExecutor
+from matplotlib import pyplot as plt
 
 
 def benchmark_dataset(function, set):
@@ -27,3 +28,17 @@ def benchmark_process_pool(functions, set):
         result[name] = times
 
     return result
+
+
+def plot_results(results, set, isLog=False, isXLog=False, title=""):
+    for name, result in results.items():
+        plt.plot(set, result, label=name)
+    plt.xlabel("n")
+    plt.ylabel("time (ms)")
+    plt.legend()
+    if isLog:
+        plt.yscale("log")
+    if isXLog:
+        plt.xscale("log")
+    plt.title(title)
+    plt.show()
