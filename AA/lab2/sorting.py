@@ -1,5 +1,6 @@
 from typing import Callable, List
 from heap import Heap
+from math import log
 
 
 def median(a: int, b: int, c: int) -> int:
@@ -76,6 +77,25 @@ def radix_sort(radix: int) -> Callable[[List[int]], List[int]]:
             numbers = [number for bucket in buckets for number in bucket]
             exp *= radix
         return numbers
+    return sort
+
+
+def radix_in_place_sort(radix: int) -> Callable[[List[int]], List[int]]:
+    def sort(numbers: List[int]) -> List[int]:
+        arr = list(numbers)
+        max_digits = int(log(max(arr), radix)) + 1
+        for i in range(max_digits):
+            buckets = [[] for _ in range(radix)]
+
+            for num in arr:
+                digit = (num // (radix ** i)) % radix
+                buckets[digit].append(num)
+
+            arr_idx = 0
+            for bucket in buckets:
+                for num in bucket:
+                    arr[arr_idx] = num
+                    arr_idx += 1
     return sort
 
 
