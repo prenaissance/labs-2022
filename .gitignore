@@ -104,7 +104,7 @@ dist
 .tern-port
 
 # vscode
-.vscode/
+# .vscode/
 
 # c/c++
 *.o
@@ -116,9 +116,6 @@ project.lock.json
 .DS_Store
 *.pyc
 nupkg/
-
-# Visual Studio Code
-.vscode
 
 # Rider
 .idea
@@ -149,3 +146,8 @@ msbuild.wrn
 .vs/
 
 __pycache__
+
+# Assembly
+*.obj
+*.o
+*.exe
