@@ -4,7 +4,7 @@
         {
             "label": "assemble",
             "type": "shell",
-            "command": "nasm -f win32 ${file} -o ${fileDirname}/${fileBasenameNoExtension}.obj",
+            "command": "nasm -f win64 ${file} -o ${fileDirname}/${fileBasenameNoExtension}.obj",
             "problemMatcher": [],
             "options": {
                 "shell": {
