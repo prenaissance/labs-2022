@@ -1,15 +1,24 @@
-        global    _main                ; declare main() method
-        extern    _printf              ; link to external library
+bits 64
+default rel
 
-        segment  .data
-        message: db   'Hello world', 0xA, 0  ; text message
-                    ; 0xA (10) is hex for (NL), carriage return
-                    ; 0 terminates the line
+segment .data
+    msg db "Hello world!", 0xd, 0xa, 0
 
-        ; code is put in the .text section
-        section .text
-_main:                            ; the entry point! void main()
-        push    message           ; save message to the stack
-        call    _printf           ; display the first value on the stack
-        add     esp, 4            ; clear the stack
-        ret                       ; return
+segment .text
+global main
+
+extern printf
+
+main:
+    ; Save the base pointer and set up the stack frame
+    push    rbp
+    mov     rbp, rsp
+    sub     rsp, 32 ; Make room on the stack for local variables
+
+    lea     rcx, [msg] ; set up the first argument for printf to the address of msg
+    call    printf
+
+    mov     rsp, rbp ; Restore the stack pointer
+    pop     rbp ; Restore the base pointer
+    xor     eax, eax ; Set the return value to 0
+    ret
