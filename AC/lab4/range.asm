@@ -11,7 +11,7 @@ main:
     ; Save the base pointer and set up the stack frame
     push rbp
     mov  rbp, rsp
-    sub  rsp, 16 ; Make room on the stack for local variables
+    sub  rsp, 32 ; Make room on the stack for local variables
 
     ; Make a counter variable and initialize it to 0
     mov  rbx, 0
@@ -31,5 +31,4 @@ main:
     mov  rsp, rbp
     pop  rbp
     xor  eax, eax ; Set the return value to 0
-    ; does not seem to work for some resaon
     ret
