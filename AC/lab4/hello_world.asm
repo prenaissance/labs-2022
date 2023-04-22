@@ -1,24 +1,20 @@
 bits 64
-default rel
 
-segment .data
-    msg db "Hello world!", 0xd, 0xa, 0
+section .data
+    hello db 'Hello, World!',0
 
-segment .text
-global main
-
-extern printf
+section .text
+    global main
 
 main:
-    ; Save the base pointer and set up the stack frame
-    push    rbp
-    mov     rbp, rsp
-    sub     rsp, 32 ; Make room on the stack for local variables
+    ; write 'Hello, World!' to stdout
+    mov eax, 4 ; system call for 'write'
+    mov ebx, 1 ; file descriptor for stdout
+    mov ecx, hello ; address of string to write
+    mov edx, 13 ; number of bytes to write
+    int 0x80 ; call kernel
 
-    lea     rcx, [msg] ; set up the first argument for printf to the address of msg
-    call    printf
-
-    mov     rsp, rbp ; Restore the stack pointer
-    pop     rbp ; Restore the base pointer
-    xor     eax, eax ; Set the return value to 0
-    ret
+    ; exit program with 0 status code
+    mov eax, 1 ; system call for 'exit'
+    xor ebx, ebx ; return 0 status code
+    int 0x80 ; call kernel

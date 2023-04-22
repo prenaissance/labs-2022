@@ -1,53 +1,40 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "assemble",
-            "type": "shell",
-            "command": "nasm -f win64 ${file} -o ${fileDirname}/${fileBasenameNoExtension}.obj",
-            "problemMatcher": [],
-            "options": {
-                "shell": {
-                    "executable": "C:\\Windows\\System32\\cmd.exe",
-                    "args": [
-                        "/c"
-                    ]
-                }
-            }
-        },
-        {
-            "label": "build",
-            "type": "shell",
-            "command": "gcc ${fileDirname}/${fileBasenameNoExtension}.obj -o ${fileDirname}/${fileBasenameNoExtension}",
-            "dependsOn": [
-                "assemble"
-            ],
-            "problemMatcher": [],
-            "options": {
-                "shell": {
-                    "executable": "C:\\Windows\\System32\\cmd.exe",
-                    "args": [
-                        "/c"
-                    ]
-                }
-            }
-        },
-        {
-            "label": "run",
-            "type": "shell",
-            "command": "${fileDirname}/${fileBasenameNoExtension}.exe",
-            "dependsOn": [
-                "build"
-            ],
-            "problemMatcher": [],
-            "options": {
-                "shell": {
-                    "executable": "C:\\Windows\\System32\\cmd.exe",
-                    "args": [
-                        "/c"
-                    ]
-                }
-            }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "assemble",
+      "type": "shell",
+      "command": "nasm -f elf64 $(wslpath '${file}') -o $(wslpath '${fileDirname}/${fileBasenameNoExtension}').o",
+      "problemMatcher": [],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\wsl.exe"
         }
-    ]
+      }
+    },
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "gcc $(wslpath '${fileDirname}/${fileBasenameNoExtension}.o') -o $(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "dependsOn": ["assemble"],
+      "problemMatcher": [],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\wsl.exe"
+        }
+      }
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "wsl $(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "dependsOn": ["build"],
+      "problemMatcher": [],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\wsl.exe"
+        }
+      }
+    }
+  ]
 }
