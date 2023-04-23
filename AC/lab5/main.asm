@@ -11,50 +11,81 @@ section .text
     global main
     extern printf
     extern scanf
+    extern putchar
 
-_factorial:
-    ; Save the base pointer and set up the stack frame
+factorial:
+    cmp rdi, 0  ; compare rdi with 0
+    jle .base_case  ; if rdi <= 0, jump to the base case
+    push rdi  ; save rdi on the stack
+    dec rdi  ; decrement rdi
+    call factorial  ; call factorial recursively
+    pop rcx  ; restore rdi from the stack
+    imul rcx, rax  ; multiply rcx (which holds the original rdi value) by the result of the recursive call
+    ret  ; return with the result in rax
+  .base_case:
+    mov rax, 1  ; base case: return 1
+    ret  ; return with the result in rax
+
+triangle_pattern:
     push rbp
-    mov  rbp, rsp
-    sub  rsp, 32 ; Make room on the stack for local variables
-    ; main code
+    mov rbp, rsp
 
-    ; check if n is 0 or 1
-    cmp ecx, 1
-    jle .factorial_end
+    ; rdi contains n
+    mov ecx, 0      ; initialize ecx to 0 (for counting rows)
+    mov ebx, '*'    ; initialize ebx to the character to print
+    mov edx, 1      ; initialize edx to 1 (for counting characters to print)
+    mov esi, 1      ; initialize esi to 1 (for counting spaces to print)
 
-    ; n * factorial(n-1)
-    mov edx, ecx
-    dec edx
-    mov ecx, edx
-    call _factorial
-    imul eax, edx
-    mov eax, edx
+  .next_row:
+    cmp ecx, rdi    ; compare row count with n
+    jge .done       ; if row count >= n, exit the loop
 
+    ; print spaces before characters
+    mov eax, ecx
+    cmp eax, 0
+    je .print_star
+  .print_space:
+    mov rdi, 0x20   ; ASCII code for space
+    call putchar
+    inc esi
+    cmp esi, rdi
+    jl .print_space
 
-.factorial_end:
-    ; Restore the stack and base pointer
-    mov  rsp, rbp
-    pop  rbp
+    ; print characters
+  .print_star:
+    mov rdi, ebx
+    call putchar
+    inc edx
+
+    ; check if we've reached the end of the row
+    cmp edx, ecx
+    jle .next_char
+
+    ; if we've reached the end of the row, print a newline and start a new row
+    mov rdi, 0xa    ; ASCII code for newline
+    call putchar
+    inc ecx         ; increment row count
+    mov edx, 1      ; reset character count
+    mov esi, 1      ; reset space count
+    jmp .next_row
+
+  .next_char:
+    ; update character to print for the next iteration
+    cmp ebx, '*'
+    je .increment
+    dec ebx
+    jmp .print_star
+
+  .increment:
+    inc ebx
+    jmp .print_star
+
+  .done:
+    pop rbp
     ret
 
 main:
-    ; Save the base pointer and set up the stack frame
-    push rbp
-    mov  rbp, rsp
-    sub  rsp, 32 ; Make room on the stack for local variables
-    ; main code
-
-    ; call factorial with 5
-
-    mov rcx, 4
-    call _factorial
-    mov rcx , factorial_result
-    mov rdx, rax
-    call printf
-
-    ; Restore the stack and base pointer
-    mov  rsp, rbp
-    pop  rbp
-    xor  eax, eax ; Set the return value to 0
+    mov rdi, 5
+    call triangle_pattern
+    mov rax, 0
     ret

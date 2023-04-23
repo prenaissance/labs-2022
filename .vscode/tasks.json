@@ -13,9 +13,9 @@
       }
     },
     {
-      "label": "build",
+      "label": "build gcc",
       "type": "shell",
-      "command": "gcc $(wslpath '${fileDirname}/${fileBasenameNoExtension}.o') -o $(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "command": "gcc $(wslpath '${fileDirname}/${fileBasenameNoExtension}.o') -o $(wslpath '${fileDirname}/${fileBasenameNoExtension}') -static",
       "dependsOn": ["assemble"],
       "problemMatcher": [],
       "options": {
@@ -25,10 +25,34 @@
       }
     },
     {
-      "label": "run",
+      "label": "run gcc",
       "type": "shell",
-      "command": "wsl $(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
-      "dependsOn": ["build"],
+      "command": "$(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "dependsOn": ["build gcc"],
+      "problemMatcher": [],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\wsl.exe"
+        }
+      }
+    },
+    {
+      "label": "build ld",
+      "type": "shell",
+      "command": "ld $(wslpath '${fileDirname}/${fileBasenameNoExtension}.o') -o $(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "dependsOn": ["assemble"],
+      "problemMatcher": [],
+      "options": {
+        "shell": {
+          "executable": "C:\\Windows\\System32\\wsl.exe"
+        }
+      }
+    },
+    {
+      "label": "run ld",
+      "type": "shell",
+      "command": "$(wslpath '${fileDirname}/${fileBasenameNoExtension}')",
+      "dependsOn": ["build ld"],
       "problemMatcher": [],
       "options": {
         "shell": {
