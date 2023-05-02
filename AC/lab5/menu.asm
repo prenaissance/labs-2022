@@ -13,7 +13,7 @@ segment .data
     nl db 10, 0
     nl_len equ $- nl
 
-    menu_msg db "Select an action:", 10, "0: Random numbers", 10, "1: String length", 10, "2: Reverse string", 10, "3: String to integer", 10, "4: Concat 2 strings", 10, "5: Replace a substring with another string", 10, "6: Generate a random string", 10, "7: Add a prefix to a string", 10, "8: Calculate the sum of an array of numbers", 10, "9: Find an element in a list of numbers", 10, "10: exit", 10, 10, 0
+    menu_msg db "Select an action:", 10, "0: Random numbers", 10, "1: String length", 10, "2: Reverse string", 10, "3: String to integer", 10, "4: Concat 2 strings", 10, "5: Convert string to uppercase", 10, "6: Generate a random string", 10, "7: Add a prefix to a string", 10, "8: Calculate the sum of an array of numbers", 10, "9: Find an element in a list of numbers", 10, "10: exit", 10, 10, 0
 
     invalid_msg db "Invalid choice! You chose ", 0
 
@@ -389,6 +389,38 @@ find_array_index:
     pop rcx     ; Restore rcx
     ret
 
+str_to_uppercase:
+    ; Input: rdi = address of string to convert
+    ;        rsi = address of string to store result
+    ; Output: rsi = address of string containing result
+
+    push rcx    ; Save any existing value of rcx on the stack
+    xor rcx, rcx
+
+    _str_to_uppercase_loop:
+    cmp byte [rdi + rcx], 0 ; Compare the character to 0
+    je _str_to_uppercase_done
+    mov al, [rdi + rcx]     ; Copy the character to al
+    cmp al, 'a'             ; Compare the character to 'a'
+    jl _str_to_uppercase_not_lowercase
+    cmp al, 'z'             ; Compare the character to 'z'
+    jg _str_to_uppercase_not_lowercase
+    sub al, 32              ; Convert the character to uppercase
+    mov [rsi + rcx], al     ; Store the character in the string
+    inc rcx                 ; Increment the counter
+    jmp _str_to_uppercase_loop
+
+    _str_to_uppercase_not_lowercase:
+    mov [rsi + rcx], al     ; Store the character in the string
+    inc rcx                 ; Increment the counter
+    jmp _str_to_uppercase_loop
+
+    _str_to_uppercase_done:
+    mov byte [rsi + rcx], 0 ; Add a null terminator to the end of the string
+
+    pop rcx     ; Restore rcx
+    ret
+
 _start:
     xor rdi, rdi         ; Initial seed to 0
 prompt:
@@ -418,7 +450,8 @@ prompt:
     je str_to_int_prompt ; Jump to str_to_int_prompt
     cmp eax, 4           ; If choice is 4
     je concat_str_prompt ; Jump to concat_str_prompt
-
+    cmp eax, 5           ; If choice is 5
+    je str_to_uppercase_prompt ; Jump to str_to_uppercase_prompt
     cmp eax, 6           ; If choice is 6
     je random_string_prompt ; Jump to random_string_prompt
     cmp eax, 7           ; If choice is 7
@@ -770,6 +803,33 @@ find_array_index_prompt:
     _find_array_index_prompt_not_found:
     mov rdi, not_found_msg
     call print
+
+    jmp prompt            ; Jump to prompt
+
+str_to_uppercase_prompt:
+    mov rdi, string_prompt_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Write result message
+    mov rdi, result_msg
+    call print
+
+    ; Convert string to uppercase
+    mov rdi, string      ; Move string pointer into rdi
+    mov rsi, string2
+    call str_to_uppercase
+
+    ; Print result
+    mov rdi, string2
+    call print
+    call print_newline
 
     jmp prompt            ; Jump to prompt
 
