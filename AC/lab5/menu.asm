@@ -10,7 +10,7 @@ segment .data
     nl db 10, 0
     nl_len equ $- nl
 
-    menu_msg db "Select an action:", 10, "0: Random number", 10, "1: String length", 10, "9: exit", 10, 0
+    menu_msg db "Select an action:", 10, "0: Random number", 10, "1: String length", 10, "2: Reverse string", 10, "10: exit", 10, 10, 0
     menu_msg_len equ $- menu_msg
 
     invalid_msg db "Invalid choice! You chose ", 0
@@ -22,11 +22,16 @@ segment .data
     random_msg db "Random number: ", 0
     random_msg_len equ $- random_msg
 
+    comma_separator db ", ", 0
+    comma_separator_len equ $- comma_separator
+
     string_prompt_msg db "Enter a string: ", 0
     string_prompt_msg_len equ $- string_prompt_msg
 
     string_len_msg db "String length: ", 0
     string_len_msg_len equ $- string_len_msg
+
+    reverse_msg db "Reverse string : ", 0
 
 segment .bss
     choice resb 4    ; string to store choice input
@@ -35,6 +40,31 @@ segment .bss
 
 segment .text
     global _start
+
+print:
+    ; Prints null terminated string
+    ; Input: rdi = address of string to print
+
+    push rax
+    push rbx
+    push rcx
+    push rdx
+
+    ; Get string length
+    call str_len
+
+    mov edx, eax
+    mov ecx, edi,
+    mov eax, SYS_WRITE
+    mov ebx, STDOUT
+    int 0x80
+
+    pop rdx
+    pop rcx
+    pop rbx
+    pop rax
+
+    ret
 
 print_newline:
     ; Push registers to stack
@@ -77,7 +107,6 @@ reverse_str:
     jmp _reverse_str_loop
     _reverse_str_done:
     mov rax, rcx    ; String length
-    dec rcx         ; Recrement rcx to point to the last character
     _reverse_str_copy:
     ; Traverse the string backwards and copy each character to the result string
     mov bl, [rdi + rcx]
@@ -101,10 +130,12 @@ int_to_str:
     ;         rax = length of string
     push rcx        ; Save any existing value of rcx on the stack
     push rsi        ; Save the address of the result string
+    push rdi
 
     xor rcx, rcx    ; Result string length
     mov rax, rdi    ; Copy the input value to rax
     mov rdi, 10     ; Reuse as divisor
+    imul rdi        ; SHITTY CODE
     _int_to_str_loop:
     xor rdx, rdx    ; Clear rdx
     div rdi         ; Divide rax by rbx
@@ -126,6 +157,7 @@ int_to_str:
     ; Add a null terminator to the end of the result string
     mov byte [rsi], 0
     ; Restore register values
+    pop rdi
     pop rsi
     pop rcx
     ret
@@ -134,29 +166,35 @@ str_to_int:
     ; Convert a string to an integer
     ; Input: rdi = address of string to convert
     ; Output: rax = integer value
-    push rcx        ; Save any existing value of rcx on the stack
-    push rdi        ; Save the address of the string to convert
-    xor rax, rax    ; Result
-    xor rcx, rcx    ; String length
+
+    push rcx    ; Save any existing value of rcx on the stack
+    push rsi    ; Save any existing value of rsi on the stack
+    push rbx    ; Save any existing value of rbx on the stack
+
+    call str_len   ; Get the length of the string
+    mov rcx, rax    ; Copy the length to rcx
+    mov rbx, 1      ; Set the multiplier to 1
+
+    xor rsi, rsi    ; Result will be stored in rsi temporarily
     _str_to_int_loop:
-    cmp byte [rdi + rcx], 0
+    xor rax, rax    ; Clear rax
+    dec rcx         ; Decrement rcx
+    cmp rcx, -1     ; Compare rcx to -1 (end of cycle)
     je _str_to_int_done
-    inc rcx
+    mov al, [rdi + rcx] ; Copy the character to al
+    sub al, '0'     ; Convert the character to an integer
+    mul rbx         ; Multiply the digit by the multiplier
+    add rsi, rax    ; Add the result to rsi
+    mov rax, 10     ; Prepare to multiply the multiplier by 10
+    mul rbx         ; Multiply the multiplier by 10
+    mov rbx, rax    ; Copy the result to rbx
     jmp _str_to_int_loop
+
     _str_to_int_done:
-    dec rcx         ; Decrement rcx to point to the last character
-    _str_to_int_loop2:
-    mov bl, [rdi + rcx]
-    sub bl, '0'     ; Convert from ASCII to number
-    mov rbx, 10     ; Reuse as multiplier
-    mul rbx         ; Multiply rax by rbx
-    add rax, rbx    ; Add the current digit to the result
-    dec rcx
-    cmp rcx, -1
-    jne _str_to_int_loop2
-    ; Restore register values
-    pop rdi
-    pop rcx
+    mov rax, rsi    ; Copy the result to rax
+    pop rbx         ; Restore rbx
+    pop rsi         ; Restore rsi
+    pop rcx         ; Restore rcx
     ret
 
 str_len:
@@ -169,36 +207,60 @@ _str_len_loop:
     inc rcx
     jmp _str_len_loop
 _str_len_done:
+    dec rcx         ; Remove null character from count
     mov rax, rcx    ; return value
 
     pop rcx
     ret
 
 random:
+    ; Input: rdi = seed, if 0 then use time of day
+    ; Output: rax = random number between 1 and 55
+    ;         rdi = new seed
+
+    ; Save register values
+    push rbx
+    push rcx
+    push rdx
+
     ; Get the unix time as the seed
+    cmp rdi, 0
+    jne _generate_random
+    ; Get the time of day
     mov eax, SYS_TIME_OF_DAY
     mov ebx, 0
     int 0x80
+    mov rdi, rax
 
-    ; Use the seed to generate a random number between 1 and 55
-    mov eax, 0
-    mov ecx, 55
-    xor edx, edx
-    div ecx
-    inc eax
+    _generate_random:
+    ; Generate a big random number
+    mov rax, rdi
+    mov rbx, 134775813
+    mov rcx, 1
+    mul rbx
+    add rax, rcx
+    mov rdi, rax
+    ; Get the remainder
+    mov rbx, 55
+    xor rdx, rdx
+    div rbx
+    inc rdx     ; Increment the remainder to get a number between 1 and 55
+    mov rax, rdx
 
+    ; Restore register values
+    pop rdx
+    pop rcx
+    pop rbx
     ret
 
 _start:
-
+    xor rdi, rdi         ; Initial seed to 0
 prompt:
-
+    ; Save seed from previous randoms
+    push rdi
     ; Write menu
-    mov eax, SYS_WRITE   ; System write
-    mov ebx, STDOUT      ; System output
-    mov ecx, menu_msg    ; What to write
-    mov edx, menu_msg_len; Length to write
-    int 0x80             ; Interupt Kernel
+    mov rdi, menu_msg
+    call print
 
     mov eax, SYS_READ    ; System read
     mov ebx, STDIN       ; System input
@@ -206,40 +268,37 @@ prompt:
     mov edx, 4           ; Length to read
     int 0x80             ; Interupt Kernel
 
-    xor eax, eax         ; Clear eax
-    mov al, [choice]     ; Move choice into al
-    sub al, '0'          ; Convert from ASCII to number
+    mov rdi, choice      ; Move choice into rdi
+    call str_to_int      ; Call str_to_int procedure
+    pop rdi              ; Restore seed
+
     cmp eax, 0           ; If choice is 0
     je random_prompt     ; Jump to random
     cmp eax, 1           ; If choice is 1
     je str_len_prompt    ; Jump to str_len
-    cmp eax, 9           ; If choice is 9
+    cmp eax, 2           ; If choice is 2
+    je reverse_string_prompt ; Jump to reverse_string
+    cmp eax, 10          ; If choice is 10
     je exit              ; Jump to exit
 
     jmp invalid          ; Else jump to invalid
 
 random_prompt:
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, random_msg
-    mov edx, random_msg_len
-    int 0x80
+    call random
+    push rdi
+    ; print random number
+    mov rdi, random_msg
+    call print
 
-    call random          ; Call random procedure
-    mov rdi, rax         ; Move random number into rdi
-    mov rsi, string      ; Move string pointer into rsi
-    call int_to_str      ; Call int_to_str procedure
 
-    ; Write random number
-    mov edx, eax
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, string
-    int 0x80
+    mov rdi, rax        ; Move random number into rdi
+    mov rsi, string     ; Move string pointer into rsi
+    call int_to_str     ; Call int_to_str procedure
+    mov rdi, string     ; Move string pointer into rdi
+    call print          ; Call print procedure
 
-    call print_newline
-
-    jmp prompt           ; Jump to prompt
+    pop rdi
+    jmp prompt          ; Jump to prompt
 
 str_len_prompt:
     ; Write string prompt
@@ -256,6 +315,13 @@ str_len_prompt:
     mov edx, 255         ; Max length to read
     int 0x80
 
+    ; Write string length message
+    mov eax, SYS_WRITE
+    mov ebx, STDOUT
+    mov ecx, string_len_msg
+    mov edx, string_len_msg_len
+    int 0x80
+
     mov rdi, string      ; Move string pointer into rdi
     call str_len         ; Call str_len procedure
 
@@ -263,17 +329,40 @@ str_len_prompt:
     mov rsi, string      ; Move string pointer into rsi
     call int_to_str      ; Call int_to_str procedure
 
-    ; Write string length message
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, string_len_msg
-    mov edx, string_len_msg_len
-
     ; Write string length
     mov edx, eax
     mov eax, SYS_WRITE
     mov ebx, STDOUT
     mov ecx, string
+    int 0x80
+
+    call print_newline
+
+    jmp prompt           ; Jump to prompt
+
+reverse_string_prompt:
+    ; Write string prompt
+    mov rdi, string_prompt_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Write reverse string message
+    mov rdi, reverse_msg
+    call print
+
+    mov rdi, string      ; Move string pointer into rdi
+    mov rsi, string2     ; Move string2 pointer into rsi
+    call reverse_str
+
+    mov rdi, string2     ; Move string2 pointer into rdi
+    call print
+    call print_newline
 
     jmp prompt           ; Jump to prompt
 
