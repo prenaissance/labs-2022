@@ -6,37 +6,46 @@ STDIN           equ 0
 STDOUT          equ 1
 
 segment .data
+    initialized_array db 15, 13, 2, 5, 7, 9, 11, 4, 6, 8, 10, 12, 14, 1, 3
+
     ; messages for prompts
     nl db 10, 0
     nl_len equ $- nl
 
-    menu_msg db "Select an action:", 10, "0: Random numbers", 10, "1: String length", 10, "2: Reverse string", 10, "10: exit", 10, 10, 0
-    menu_msg_len equ $- menu_msg
+    menu_msg db "Select an action:", 10, "0: Random numbers", 10, "1: String length", 10, "2: Reverse string", 10, "3: String to integer", 10, "4: Concat 2 strings", 10, "5: Replace a substring with another string", 10, "6: Generate a random string", 10, "7: Add a prefix to a string", 10, "8: Calculate the sum of an array of numbers", 10, "9: Find an element in a list of numbers", 10, "10: exit", 10, 10, 0
 
     invalid_msg db "Invalid choice! You chose ", 0
-    invalid_msg_len equ $- invalid_msg
 
-    exit_msg db "Goodbye!", 10, 0
-    exit_msg_len equ $- exit_msg
+    result_msg db "Result: ", 0
+
+    exit_msg db "Goodbye!", 10, 10, 0
 
     random_msg db "Random number: ", 0
-    random_msg_len equ $- random_msg
 
     comma_separator db ", ", 0
-    comma_separator_len equ $- comma_separator
 
     string_prompt_msg db "Enter a string: ", 0
-    string_prompt_msg_len equ $- string_prompt_msg
+
+    string_prompt2_msg db "Enter another string: ", 0
 
     string_len_msg db "String length: ", 0
-    string_len_msg_len equ $- string_len_msg
 
     reverse_msg db "Reverse string : ", 0
 
+    str_to_int_msg db "Enter a number, it will be parsed and that many dots will be printed: ", 0
+    dot db ".", 0
+
+    array_length_msg db "Enter the length of the array: ", 0
+    array_element_msg db "Enter an element (up to 255): ", 0
+
+    find_element_msg db "Here's an array: [15, 13, 2, 5, 7, 9, 11, 4, 6, 8, 10, 12, 14, 1, 3]", 10, "Enter an element to find: ", 0
+
 segment .bss
-    choice resb 4    ; string to store choice input
-    string resb 255  ; string to store input
-    string2 resb 255 ; another buffer string
+    choice resb 4     ; string to store choice input
+    string resb 255   ; string to store input
+    string2 resb 255  ; another buffer string
+    string3 resb 255  ; guess what
+    byte_arr resb 255 ; byte array to store numbers
 
 segment .text
     global _start
@@ -120,6 +129,57 @@ reverse_str:
     ; Restore register values
     pop rcx
     pop rsi
+    ret
+
+concat_str:
+    ; Concatenates two strings putting the output in a third
+    ; Input: rdi = address of first string
+    ;        rsi = address of second string
+    ;        rdx = address of string to store result
+    ; Output: rdx = address of string containing result
+
+    push rdx        ; Save the address of the result string
+    push rdi        ; Save the address of the first string
+    push rsi        ; Save the address of the second string
+
+    ; Copy the first string to the result string
+
+    _concat_str_copy_first:
+    mov bl, [rdi]
+    cmp bl, 10      ; ignore newlines
+
+    ; copy byte if not newline
+    je _concat_str_skip_newline
+    mov [rdx], bl
+    inc rdx
+    _concat_str_skip_newline:
+    inc rdi
+    cmp byte [rdi], 0
+    jne _concat_str_copy_first
+
+    ; Copy the second string to the result string
+
+    _concat_str_copy_second:
+    mov bl, [rsi]
+    cmp bl, 10      ; ignore newlines
+
+    ; copy byte if not newline
+    je _concat_str_skip_newline2
+    mov [rdx], bl
+    inc rdx
+    _concat_str_skip_newline2:
+    inc rsi
+    cmp byte [rsi], 0
+    jne _concat_str_copy_second
+
+    ; Add a null terminator to the end of the result string
+    mov byte [rdx], 0
+
+    ; Restore register values
+    pop rsi
+    pop rdi
+    pop rdx
+
     ret
 
 int_to_str:
@@ -273,11 +333,15 @@ prompt:
     pop rdi              ; Restore seed
 
     cmp eax, 0           ; If choice is 0
-    je random_prompt     ; Jump to random
+    je random_prompt     ; Jump to random_prompt
     cmp eax, 1           ; If choice is 1
-    je str_len_prompt    ; Jump to str_len
+    je str_len_prompt    ; Jump to str_len_prompt
     cmp eax, 2           ; If choice is 2
     je reverse_string_prompt ; Jump to reverse_string
+    cmp eax, 3           ; If choice is 3
+    je str_to_int_prompt ; Jump to str_to_int_prompt
+    cmp eax, 4           ; If choice is 4
+    je concat_str_prompt ; Jump to concat_str_prompt
     cmp eax, 10          ; If choice is 10
     je exit              ; Jump to exit
 
@@ -319,12 +383,8 @@ random_prompt:
     jmp prompt          ; Jump to prompt
 
 str_len_prompt:
-    ; Write string prompt
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, string_prompt_msg
-    mov edx, string_prompt_msg_len
-    int 0x80
+    mov rdi, string_prompt_msg
+    call print
 
     ; Read string
     mov eax, SYS_READ
@@ -334,11 +394,8 @@ str_len_prompt:
     int 0x80
 
     ; Write string length message
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, string_len_msg
-    mov edx, string_len_msg_len
-    int 0x80
+    mov rdi, string_len_msg
+    call print
 
     mov rdi, string      ; Move string pointer into rdi
     call str_len         ; Call str_len procedure
@@ -384,28 +441,86 @@ reverse_string_prompt:
 
     jmp prompt           ; Jump to prompt
 
-invalid:
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT      
-    mov ecx, invalid_msg
-    mov edx, invalid_msg_len
+str_to_int_prompt:
+    ; Write prompt
+
+    mov rdi, str_to_int_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
     int 0x80
 
-    pop rax; Restore rax
-    mov eax, SYS_WRITE
-    mov ebx, STDOUT
-    mov ecx, choice
-    mov edx, 4
+    mov rdi, string      ; Move string pointer into rdi
+    call str_to_int      ; Call str_to_int procedure
+
+    mov rcx, rax         ; Move result into counter register
+    mov rdi, dot         ; Move dot pointer into rdi
+
+    _str_to_int_prompt_loop:
+    call print           ; Call print procedure
+    dec rcx              ; Decrement counter
+    cmp rcx, 0           ; Compare counter to 0
+    jne _str_to_int_prompt_loop ; Jump if not equal to 0
+
+    call print_newline
+    jmp prompt           ; Jump to prompt
+
+concat_str_prompt:
+    ; Write string prompt
+    mov rdi, string_prompt_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
     int 0x80
+
+    ; Write another string prompt
+
+    mov rdi, string_prompt2_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string2     ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Write result message
+    mov rdi, result_msg
+    call print
+
+    ; Concat strings in string3
+    mov rdi, string      ; Move string pointer into rdi
+    mov rsi, string2     ; Move string2 pointer into rsi
+    mov rdx, string3     ; Move string3 pointer into rdx
+    call concat_str
+
+    mov rdi, string3     ; Move string3 pointer into rdi
+    call print           ; Call print procedure
+
+    call print_newline
+    jmp prompt           ; Jump to prompt
+
+invalid:
+    mov rdi, invalid_msg
+
+    pop rax; Restore rax
+    mov rdi, choice
+    call print
 
     jmp prompt
 
 exit:
-    mov eax, SYS_WRITE   ; System write
-    mov ebx, STDOUT      ; System output
-    mov ecx, exit_msg    ; What to write
-    mov edx, exit_msg_len; Length to write
-    int 0x80             ; Interupt Kernel
+    mov rdi, exit_msg
+    call print
 
     mov eax, SYS_EXIT    ; System exit
     mov ebx, 0           ; Exit code
