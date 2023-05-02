@@ -10,7 +10,7 @@ segment .data
     nl db 10, 0
     nl_len equ $- nl
 
-    menu_msg db "Select an action:", 10, "0: Random number", 10, "1: String length", 10, "2: Reverse string", 10, "10: exit", 10, 10, 0
+    menu_msg db "Select an action:", 10, "0: Random numbers", 10, "1: String length", 10, "2: Reverse string", 10, "10: exit", 10, 10, 0
     menu_msg_len equ $- menu_msg
 
     invalid_msg db "Invalid choice! You chose ", 0
@@ -284,12 +284,18 @@ prompt:
     jmp invalid          ; Else jump to invalid
 
 random_prompt:
-    call random
-    push rdi
+    push rcx            ; Save any existing value of rcx on the stack
+    push rdi            ; store seed
     ; print random number
     mov rdi, random_msg
     call print
 
+    xor rcx, rcx        ; Clear rcx counter
+
+    _random_loop:
+    pop rdi             ; Restore seed
+    call random         ; Call random procedure
+    push rdi            ; Store seed
 
     mov rdi, rax        ; Move random number into rdi
     mov rsi, string     ; Move string pointer into rsi
@@ -297,7 +303,19 @@ random_prompt:
     mov rdi, string     ; Move string pointer into rdi
     call print          ; Call print procedure
 
+    inc rcx             ; Increment rcx counter
+    cmp rcx, 9          ; Compare rcx to 9
+    je _random_end
+
+    ; print comma
+    mov rdi, comma_separator
+    call print
+    jmp _random_loop
+
+    _random_end:
+    call print_newline
     pop rdi
+    pop rcx
     jmp prompt          ; Jump to prompt
 
 str_len_prompt:
