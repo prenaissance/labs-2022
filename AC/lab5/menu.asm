@@ -7,6 +7,7 @@ STDOUT          equ 1
 
 segment .data
     initialized_array db 15, 13, 2, 5, 7, 9, 11, 4, 6, 8, 10, 12, 14, 1, 3
+    array_sum dq 0
 
     ; messages for prompts
     nl db 10, 0
@@ -32,13 +33,19 @@ segment .data
 
     reverse_msg db "Reverse string : ", 0
 
+    number_msg db "Enter a number: ", 0
+
+    prefix_msg db "Enter a prefix: ", 0
+
     str_to_int_msg db "Enter a number, it will be parsed and that many dots will be printed: ", 0
     dot db ".", 0
 
     array_length_msg db "Enter the length of the array: ", 0
     array_element_msg db "Enter an element (up to 255): ", 0
+    not_found_msg db "Element not found!", 0
 
     find_element_msg db "Here's an array: [15, 13, 2, 5, 7, 9, 11, 4, 6, 8, 10, 12, 14, 1, 3]", 10, "Enter an element to find: ", 0
+    find_element_result_msg db "Element found at index (0 based): ", 0
 
 segment .bss
     choice resb 4     ; string to store choice input
@@ -191,6 +198,7 @@ int_to_str:
     push rcx        ; Save any existing value of rcx on the stack
     push rsi        ; Save the address of the result string
     push rdi
+    push rdx
 
     xor rcx, rcx    ; Result string length
     mov rax, rdi    ; Copy the input value to rax
@@ -217,6 +225,7 @@ int_to_str:
     ; Add a null terminator to the end of the result string
     mov byte [rsi], 0
     ; Restore register values
+    pop rdx
     pop rdi
     pop rsi
     pop rcx
@@ -313,6 +322,73 @@ random:
     pop rbx
     ret
 
+random_string:
+    ; Input: rdi = seed, if 0 then use time of day
+    ;        rsi = address of string to store result
+    ;        rdx = length of string to generate
+    ; Output: rsi = address of string containing result
+
+    ; Save register values
+    push rbx
+    push rcx
+    push rsi
+
+    mov rcx, rdx    ; Copy the length to rcx
+
+    ; Generate a random number that is stored in rax
+    ; and add it to the string till the counter reaches 0
+
+    _random_string_loop:
+    call random
+    mov rbx, 26           ; Number of letters in the alphabet
+    xor rdx, rdx
+    div rbx              ; Get the remainder
+    add dl, 'a'          ; Convert the remainder to a letter
+    mov [rsi], dl        ; Store the letter in the string
+    inc rsi              ; Increment the string pointer
+    cmp rcx, 0           ; Compare the counter to 0
+    dec rcx              ; Decrement the counter
+    jne _random_string_loop
+
+    ; Add a null terminator to the end of the string
+    mov byte [rsi], 0
+
+    ; Restore register values
+    pop rsi
+    pop rcx
+    pop rbx
+    ret
+
+find_array_index:
+    ; Find index of element in the array 'initialized_array'
+    ; Input: rdi = element to find
+    ; Output: rax = index of element in array, -1 if not found
+
+    push rcx    ; Save any existing value of rcx on the stack
+    mov rcx, 0  ; Set the counter to 0
+
+    _find_array_index_loop:
+    cmp rcx, 15 ; Compare the counter to 15 (length of array)
+    je _find_array_index_not_found
+
+    xor rax, rax ; Clear rax
+    mov al, [initialized_array + rcx] ; Copy the element to rax
+    cmp rax, rdi ; Compare the element to the one we are looking for
+    je _find_array_index_found
+    inc rcx      ; Increment the counter
+    jmp _find_array_index_loop
+
+    _find_array_index_found:
+    mov rax, rcx ; Copy the index to rax
+    jmp _find_array_index_done
+
+    _find_array_index_not_found:
+    mov rax, -1 ; Set the index to -1
+
+    _find_array_index_done:
+    pop rcx     ; Restore rcx
+    ret
+
 _start:
     xor rdi, rdi         ; Initial seed to 0
 prompt:
@@ -342,6 +418,15 @@ prompt:
     je str_to_int_prompt ; Jump to str_to_int_prompt
     cmp eax, 4           ; If choice is 4
     je concat_str_prompt ; Jump to concat_str_prompt
+
+    cmp eax, 6           ; If choice is 6
+    je random_string_prompt ; Jump to random_string_prompt
+    cmp eax, 7           ; If choice is 7
+    je string_prefix_prompt ; Jump to string_prefix_prompt
+    cmp eax, 8           ; If choice is 8
+    je array_sum_prompt  ; Jump to array_sum_prompt
+    cmp eax, 9           ; If choice is 9
+    je find_array_index_prompt ; Jump to find_array_index_prompt
     cmp eax, 10          ; If choice is 10
     je exit              ; Jump to exit
 
@@ -508,6 +593,185 @@ concat_str_prompt:
 
     call print_newline
     jmp prompt           ; Jump to prompt
+
+random_string_prompt:
+    ; Write prompt
+    mov rdi, number_msg
+    call print
+
+    ; Read number
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Convert string to int
+    mov rdi, string      ; Move string pointer into rdi
+    call str_to_int      ; Call str_to_int procedure
+
+    ; Set arguments for the random_string procedure
+    xor rdi, rdi         ; Clear rdi
+    mov rsi, string      ; Move string pointer into rsi
+    mov rdx, rax         ; Move number into rdx
+
+    call random_string   ; Call random_string procedure
+
+    mov rdi, string      ; Move string pointer into rdi
+    call print           ; Call print procedure
+    call print_newline
+
+    jmp prompt           ; Jump to prompt
+
+string_prefix_prompt:
+    ; Write string prompt
+    mov rdi, string_prompt_msg
+    call print
+
+    ; Read string
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Write prefix prompt
+    mov rdi, prefix_msg
+    call print
+
+    ; Read prefix
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string2     ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Write result message
+    mov rdi, result_msg
+    call print
+
+    ; prepare arguments for concat_str procedure
+    mov rdi, string2      ; Move string2 pointer into rdi
+    mov rsi, string       ; Move string pointer into rsi
+    mov rdx, string3      ; Move string3 pointer into rdx
+    call concat_str       ; Call concat_str procedure
+
+    mov rdi, string3      ; Move string3 pointer into rdi
+    call print            ; Call print procedure
+
+    jmp prompt           ; Jump to prompt
+
+array_sum_prompt:
+    mov rdi, array_length_msg
+    call print
+    ; Reset counter
+    mov qword [array_sum], 0
+
+    ; Read array length
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Convert string to int
+    mov rdi, string      ; Move string pointer into rdi
+    call str_to_int      ; Call str_to_int procedure
+
+    ; Move array length to counter register
+    mov rcx, rax
+
+    ; Loop N times to read N numbers and sum them
+    _array_sum_prompt_loop:
+    mov rdi, number_msg
+    call print
+
+    push rcx             ; Save counter
+
+    ; Read number
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    pop rcx              ; Restore counter
+
+    ; Convert string to int
+    mov rdi, string      ; Move string pointer into rdi
+    call str_to_int      ; Call str_to_int procedure
+
+    ; Add number to accumulator
+    add qword [array_sum], rax
+
+    ; Decrement counter
+    dec rcx
+
+    ; Loop if counter is not 0
+    cmp rcx, 0
+    jne _array_sum_prompt_loop
+
+    ; Write result message
+    mov rdi, result_msg
+    call print
+
+    ; Convert accumulator to string
+    mov rdi, [array_sum]  ; Move accumulator into rdi
+    mov rsi, string
+    call int_to_str
+
+    ; Print result
+    mov rdi, string
+    call print
+    call print_newline
+
+    jmp prompt            ; Jump to prompt
+
+find_array_index_prompt:
+    mov rdi, find_element_msg
+    call print
+
+    ; Read element
+    mov eax, SYS_READ
+    mov ebx, STDIN
+    mov ecx, string      ; Where to store input
+    mov edx, 255         ; Max length to read
+    int 0x80
+
+    ; Convert string to int
+    mov rdi, string      ; Move string pointer into rdi
+    call str_to_int      ; Call str_to_int procedure
+
+    ; Move element to rdi
+
+    mov rdi, rax         ; Move element into rdi
+    ; Call find_array_index procedure
+    call find_array_index
+
+    ; Write result message
+    mov rdi, find_element_result_msg
+    call print
+
+    cmp rax, -1
+    je _find_array_index_prompt_not_found
+
+    ; Convert index to string
+    mov rdi, rax         ; Move index into rdi
+    mov rsi, string
+    call int_to_str
+
+    ; Print result
+    mov rdi, string
+    call print
+    call print_newline
+
+    jmp prompt            ; Jump to prompt
+
+    _find_array_index_prompt_not_found:
+    mov rdi, not_found_msg
+    call print
+
+    jmp prompt            ; Jump to prompt
 
 invalid:
     mov rdi, invalid_msg
